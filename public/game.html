@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Treasure Box Guess Game</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the game board grid items */
+        .game-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: bold;
+            height: 100px; /* Fixed height for boxes */
+            width: 100%; /* Fill the grid cell */
+            cursor: pointer;
+            transition: all 0.15s ease-in-out;
+            user-select: none;
+        }
+
+        /* Hover state for playable boxes */
+        .game-box:not([disabled]):hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        /* Visual feedback on disabled state */
+        .game-box[disabled] {
+            cursor: default;
+            box-shadow: none;
+        }
+    </style>
+    <script>
+        // Tailwind Configuration for custom colors
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary-btn': '#3b82f6', // Bright Blue
+                        'win-color': '#10b981',   // Emerald Green
+                        'loss-color': '#ef4444',  // Red
+                        'dark-bg': '#1e293b',    // Slate 800
+                        'card-bg': '#334155',    // Slate 700
+                        'box-default': '#475569', // Slate 600
+                        'box-hover': '#64748b',   // Slate 500
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-dark-bg min-h-screen flex flex-col items-center justify-center p-4 font-sans">
+    <div class="bg-dark-bg text-3xl text-white mb-2" id="uname"></div>
+
+    <div id="game-container" class="w-full max-w-xl mx-auto p-6 bg-card-bg shadow-2xl rounded-2xl border-t-4 border-primary-btn">
+        <!-- Game Header -->
+        <header class="text-center mb-6">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-white mb-2">Treasure Hunt!</h1>
+            <p id="game-message" class="text-xl font-medium text-white">
+                <span class="text-primary-btn">Guess the safe boxes</span> to multiply your stake.
+            </p>
+        </header>
+
+        <!-- Input & Output Section - Now a 3-column layout on desktop -->
+        <div class="flex flex-col space-y-4 mb-6 md:grid md:grid-cols-3 md:gap-4 md:space-y-0">
+            <!-- NEW: Total Points / Balance Box -->
+            <div id="total-points-box" class="h-12 flex items-center justify-center bg-gray-800 text-xl font-bold rounded-lg shadow-inner text-yellow-400 border-2 border-gray-700">
+                Balance: $0.00
+            </div>
+            
+            <input type="number" id="price" placeholder="Enter Bet Amount ($)" 
+                   min="1" step="0.01" value="10"
+                   class="w-full p-3 text-lg text-gray-900 bg-gray-100 border-2 border-primary-btn rounded-lg 
+                          focus:ring-2 focus:ring-primary-btn focus:border-primary-btn transition duration-150 ease-in-out shadow-inner font-semibold" />
+            
+            <div id="op_box" class="h-12 flex items-center justify-center bg-gray-800 text-xl font-bold rounded-lg shadow-inner text-win-color border-2 border-gray-700">
+                Winnings: $0
+            </div>
+        </div>
+
+        <!-- Game Board (16 boxes) -->
+        <div id="boxes-grid" class="grid grid-cols-4 gap-3 p-2 bg-slate-800/50 rounded-lg shadow-inner">
+            <!-- Buttons will be dynamically populated/updated by JS -->
+            <!-- Placeholder for 16 boxes -->
+            <button class="game-box bg-box-default text-white rounded-xl shadow-md hover:bg-box-hover" id="1">?</button>
+            <button class="game-box bg-box-default text-white rounded-xl shadow-md hover:bg-box-hover" id="2">?</button>
+            <button class="game-box bg-box-default text-white rounded-xl shadow-md hover:bg-box-hover" id="3">?</button>
+            <button class="game-box bg-box-default text-white rounded-xl shadow-md hover:bg-box-hover" id="4">?</button>
+            <button class="game-box bg-box-default text-white rounded-xl shadow-md hover:bg-box-hover" id="5">?</button>
+            <button class="game-box bg-box-default text-white rounded-xl shadow-md hover:bg-box-hover" id="6">?</button>
+            <button class="game-box bg-box-default text-white rounded-xl shadow-md hover:bg-box-hover" id="7">?</button>
+            <button class="game-box bg-box-default text-white rounded-xl shadow-md hover:bg-box-hover" id="8">?</button>
+            <button class="game-box bg-box-default text-white rounded-xl shadow-md hover:bg-box-hover" id="9">?</button>
+            <button class="game-box bg-box-default text-white rounded-xl shadow-md hover:bg-box-hover" id="10">?</button>
+            <button class="game-box bg-box-default text-white rounded-xl shadow-md hover:bg-box-hover" id="11">?</button>
+            <button class="game-box bg-box-default text-white rounded-xl shadow-md hover:bg-box-hover" id="12">?</button>
+            <button class="game-box bg-box-default text-white rounded-xl shadow-md hover:bg-box-hover" id="13">?</button>
+            <button class="game-box bg-box-default text-white rounded-xl shadow-md hover:bg-box-hover" id="14">?</button>
+            <button class="game-box bg-box-default text-white rounded-xl shadow-md hover:bg-box-hover" id="15">?</button>
+            <button class="game-box bg-box-default text-white rounded-xl shadow-md hover:bg-box-hover" id="16">?</button>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex justify-center space-x-4 mt-6">
+            <button id="reset" class="flex-1 px-4 py-3 text-lg font-semibold text-white bg-gray-600 hover:bg-gray-700 rounded-xl shadow-md transition duration-150 ease-in-out transform hover:scale-[1.02]">
+                <span class="hidden sm:inline">New Game</span> <span class="sm:hidden">Reset</span>
+            </button>
+            <button id="withdraw" class="flex-1 px-4 py-3 text-lg font-semibold text-white bg-win-color hover:bg-green-600 rounded-xl shadow-md transition duration-150 ease-in-out transform hover:scale-[1.02] disabled:opacity-50" disabled>
+                Withdraw Winnings
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        const boxes = document.querySelectorAll(".game-box");
+        const resetBtn = document.querySelector("#reset");
+        const uname = document.querySelector("#uname");
+        const withdrawBtn = document.querySelector("#withdraw");
+        const opBox = document.querySelector("#op_box");
+        const priceInput = document.querySelector("#price");
+        const messageDisplay = document.querySelector("#game-message");
+        const totalPointsBox = document.querySelector("#total-points-box"); // NEW element reference
+        // --- Game State Variables ---
+        let winCount = 0;
+        let lossIndexes = [];
+        let totalPoints = 100; // Will be set by loadTotalPoints
+        let currentBet = 0;
+        const TOTAL_BOXES = 16;
+        const LOSS_BOXES = 2;
+        if(sessionStorage.getItem("islogged")=="True"&& sessionStorage.getItem("username")){
+            uname.innerText=`Welcome ${sessionStorage.getItem("username")}`;
+            const userN=sessionStorage.getItem("email")
+        // Function to load points from localStorage or set default
+        function loadTotalPoints() {
+            Pdata={
+                "userN":`${userN}`
+            }
+            fetch('/game.html',{
+                method:'POST',
+                headers:{
+                    'Content-Type':'application/json'
+                },
+                body:JSON.stringify(Pdata)
+            }).then((data)=>{
+                return data.json();
+            }).then((data)=>{
+                console.log(data.points)
+                const storedPoints=data.points
+                // Default starting balance is $100
+                totalPoints = storedPoints!=-1 ? parseFloat(storedPoints) : 100.00; 
+                totalPointsBox.innerText = `Balance: $${totalPoints.toFixed(2)}`
+            })
+        }
+        
+        // Function to save points to localStorage and update UI
+        function saveTotalPoints(newPoints) {
+            totalPoints = parseFloat(newPoints.toFixed(2));
+            pointData={
+                "userN":`${userN}`,
+                "Points":`${totalPoints}`
+            }
+            console.log(pointData);
+            localStorage.setItem('treasureHuntTotalPoints', totalPoints);
+            fetch('/game.html',{
+                method:'PUT',
+                headers:{
+                    'Content-Type':'application/json'
+                },
+                body:JSON.stringify(pointData)
+            }).then((data)=>{
+                
+            })
+            
+            // Adjust bet input constraints based on new balance
+            priceInput.max = totalPoints.toFixed(2);
+            if (totalPoints <= 0) {
+                 priceInput.value = 0;
+                 priceInput.disabled = true;
+            } else if (parseFloat(priceInput.value) > totalPoints) {
+                 priceInput.value = totalPoints.toFixed(2);
+            }
+        }
+
+        /**
+         * Initializes the game state, including generating new loss boxes.
+         */
+        function initializeGame() {
+            winCount = 0;
+            currentBet = 0;
+            lossIndexes = [];
+            
+            // Load persistent balance and update display
+            loadTotalPoints();
+            totalPointsBox.innerText = `Balance: $${totalPoints.toFixed(2)}`;
+            // Generate unique random loss indexes (1 to 16)
+            while(lossIndexes.length < LOSS_BOXES) {
+                const randomId = Math.floor(Math.random() * TOTAL_BOXES) + 1;
+                if(lossIndexes.indexOf(randomId) === -1) {
+                    lossIndexes.push(randomId);
+                }
+            }
+
+            // Reset UI for all boxes
+            boxes.forEach((box, index) => {
+                box.innerText = "?";
+                box.disabled = false;
+                // Reset classes for default look
+                box.classList.remove('bg-win-color', 'bg-loss-color', 'text-white', 'opacity-100', 'animate-pulse', 'opacity-50');
+                box.classList.add('bg-box-default', 'text-white', 'hover:bg-box-hover');
+                box.setAttribute('aria-label', `Box ${index + 1}`);
+            });
+
+            // Reset status displays and buttons
+            opBox.innerText = "Winnings: $0";
+            opBox.classList.remove('text-loss-color');
+            opBox.classList.add('text-win-color');
+            
+            // Initial message and bet setup
+            if (totalPoints <= 0) {
+                messageDisplay.innerText = "GAME OVER. Balance $0. Please refresh to start a new balance ($100).";
+                priceInput.disabled = true;
+            } else {
+                messageDisplay.innerText = "Enter your bet and click a box to start!";
+                priceInput.disabled = false;
+            }
+            
+            withdrawBtn.disabled = true;
+        }
+
+        /**
+         * Handles the click event on a box.
+         * @param {HTMLElement} box - The box element clicked.
+         */
+        function handleBoxClick(box) {
+            if (box.disabled) return;
+            
+            const betAmount = parseFloat(priceInput.value) || 0;
+            
+            // First click logic: Validate and deduct bet
+            if (winCount === 0) {
+                if (betAmount <= 0) {
+                    messageDisplay.innerText = "Please enter a bet amount greater than $0.";
+                    return; // Block the click if bet is invalid
+                }
+                if (betAmount > totalPoints) {
+                    messageDisplay.innerText = "Bet amount exceeds your current balance.";
+                    return; // Block the click if bet exceeds balance
+                }
+                
+                currentBet = betAmount;
+                totalPointsBox.innerText=`Balance: $${totalPoints-currentBet}`
+                priceInput.disabled = true;
+            }
+
+            const id = parseInt(box.getAttribute("id"));
+            let isLoss = lossIndexes.includes(id);
+
+            // Apply styling and content based on result
+            box.disabled = true;
+            box.classList.remove('bg-box-default', 'hover:bg-box-hover');
+            box.classList.add('opacity-100'); // Ensure visibility
+
+            if (isLoss) {
+                // --- LOSS SCENARIO ---
+                box.innerText = "💣"; // Bomb/Loss Emoji
+                box.classList.add('bg-loss-color', 'animate-pulse');
+                
+                // End Game
+                boxes.forEach((b) => {
+                    b.disabled = true; // Disable all boxes
+                    b.classList.remove('hover:bg-box-hover');
+                });
+                
+                opBox.innerText = `LOST: $${currentBet.toFixed(2)}`;
+                opBox.classList.remove('text-win-color');
+                opBox.classList.add('text-loss-color');
+                messageDisplay.innerText = `BOOM! You lost $${currentBet.toFixed(2)}. New Balance: $${totalPoints.toFixed(2)}. Click 'New Game' to try again.`;
+                withdrawBtn.disabled = true;
+                
+                // Show all remaining loss boxes for feedback
+                lossIndexes.forEach(lossId => {
+                    const lossBox = document.getElementById(lossId);
+                    if (!lossBox.disabled) {
+                         lossBox.innerText = "💣";
+                         lossBox.classList.remove('bg-box-default', 'hover:bg-box-hover');
+                         lossBox.classList.add('bg-loss-color', 'opacity-50');
+                         lossBox.disabled = true;
+                    }
+                });
+                saveTotalPoints(totalPoints - currentBet); // Deduct bet from total points
+            } else {
+                // --- WIN SCENARIO ---
+                winCount++;
+                box.innerText = "✨"; // Win Emoji (Treasure)
+                box.classList.add('bg-win-color');
+                
+                // Update Winnings Display
+                const potentialWinnings = (currentBet * winCount).toFixed(2);
+                opBox.innerText = `x${winCount} | Winnings: $${potentialWinnings}`;
+                
+                // Enable Withdraw
+                withdrawBtn.disabled = false;
+                messageDisplay.innerText = `Great guess! You are at a x${winCount} multiplier. Withdraw or risk it? (Balance: $${totalPoints.toFixed(2)})`;
+
+                // Check for max win
+                if (winCount === TOTAL_BOXES - LOSS_BOXES) {
+                    messageDisplay.innerText = "MAX WIN! Please withdraw your massive winnings.";
+                    boxes.forEach(b => b.disabled = true);
+                }
+            }
+        }
+
+        /**
+         * Calculates and displays the final withdrawal amount and updates total points.
+         */
+        function handleWithdraw() {
+            const finalWinnings = (currentBet * winCount);
+            
+            // Add winnings back to the total points
+            saveTotalPoints(totalPoints+finalWinnings-currentBet);
+
+            opBox.innerText = `YOU WON $${finalWinnings.toFixed(2)}`;
+            messageDisplay.innerText = `CASHOUT: You successfully won $${finalWinnings.toFixed(2)}. New Balance: $${totalPoints.toFixed(2)}. Click 'New Game' to play again.`;
+            totalPointsBox.innerText = `Balance: $${totalPoints.toFixed(2)}`
+            // Disable all actions after withdrawal
+            boxes.forEach(box => box.disabled = true);
+            withdrawBtn.disabled = true;
+        }
+
+        // --- Event Listeners ---
+        resetBtn.addEventListener("click", () => {
+             // For a clean restart, we use window.location.reload() as per the original design.
+             // The points will be managed by localStorage persistence.
+             // If you want to reset your score to $100, you need to clear localStorage:
+             //localStorage.removeItem('treasureHuntTotalPoints'); 
+             window.location.reload();
+        });
+
+        withdrawBtn.addEventListener("click", handleWithdraw);
+
+        boxes.forEach((box) => {
+            box.addEventListener("click", () => handleBoxClick(box));
+        });
+        // Initialize the game when the script loads
+        document.addEventListener('DOMContentLoaded', initializeGame);
+    }else{
+        document.location.replace('/login.html');
+    }
+    </script>
+</body>
+</html>

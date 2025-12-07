@@ -1,29 +1,38 @@
+const dotenv=require('dotenv') ;
+dotenv.config();
 const path=require('path');
 const express=require('express');
+const fs=require('fs');
 const app=express();
 const bcrypt=require('bcrypt');
 const mysql=require('mysql2');
 const PORT=process.env.PORT||5500;
+app.use(express.json());
+app.use(express.urlencoded({extended:false}));
 
+console.log(process.env.MYSQLHOST)
 const db=mysql.createConnection({
-    host:`${process.env.MYSQLHOST}`,
-    user:`${process.env.MYSQLUSER}`,
-    password:`${process.env.MYSQLPASSWORD}`,
-    database:`${process.env.MYSQLDATABASE}`
-}) 
-
-
+    host:process.env.MYSQLHOST,
+    port:process.env.PORT,
+    user:process.env.MYSQLUSER,
+    password:process.env.MYSQLPASSWORD,
+    database:process.env.MYSQLDATABASE,
+    ssl: {
+    ca: fs.readFileSync(process.env.MYSQLSSLPATH)
+  } 
+})  
+ 
 let connectionCheck=0;
 db.connect((err)=>{
-    if(err){
+    if(err){ 
         console.log(err);
-    }else{
+    }else{ 
         console.log("connected");
         connectionCheck=1;
     }
 }) 
-
-let tableCreationSignin="CREATE Table usersignup(username varchar(100),email varchar(100), password varchar(100))";
+ 
+let tableCreationSignin="CREATE Table usersignup(username varchar(100),email varchar(100) primary key, password varchar(100))";
 db.query(tableCreationSignin,(err)=>{
     if(err){
         console.log(err.message);
@@ -41,9 +50,6 @@ db.query(tableCreationUserData,(err)=>{
     }
 })
 
-
-app.use(express.json());
-app.use(express.urlencoded({extended:false}));
 
 app.use('/signup{.html}',express.static(path.join(__dirname,'public')));
 app.get('/',(req,res)=>{
@@ -87,7 +93,7 @@ app.post('/',async (req,res)=>{
 app.use('/login{.html}',express.static(path.join(__dirname,'public')));
 app.post('/login{.html}',async(req,res)=>{
     const loginInfo=await req.body;
-    let dataFetch=`select * from usersignup where email="${await loginInfo.email}"`;
+    let dataFetch=`select * from usersignup where email='${await loginInfo.email}'`;
     db.query(dataFetch,async(err,result)=>{
         if(err){
             console.log(err.message);
@@ -132,7 +138,7 @@ app.get('/game{.html}',async(req,res)=>{
 
 app.use('/game{.html}',express.static(path.join(__dirname,'public')));
 app.post('/game{.html}',async(req,res)=>{
-    q1=`select points from userpoints where email="${await req.body.userN}"`
+    q1=`select points from userpoints where email='${await req.body.userN}'`
     db.query(q1,(err,result)=>{
         if(err){
             console.error(err.message);
@@ -154,7 +160,7 @@ app.post('/game{.html}',async(req,res)=>{
 app.use('/game{.html}',express.static(path.join(__dirname,'public')));
 app.put('/game{.html}',async(req,res)=>{
     const points=await req.body;
-    q2=`UPDATE userpoints SET points=${points.Points} WHERE email="${points.userN}";`
+    q2=`UPDATE userpoints SET points=${points.Points} WHERE email='${points.userN}';`
     db.query(q2,(err)=>{
         if(err){
             console.error(err.message);
